@@ -1,0 +1,31 @@
+services:
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./minio-data:/data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MC_HOST_LOCAL: http://minioadmin:minioadmin@localhost:9000
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: mc ping local --count 1
+      # すぐに結果が出るようにタイミングを調整する
+      start_period: 2s
+      start_interval: 2s
+      timeout: 2s
+      retries: 3
+      interval: 30s
+
+  mc:
+    image: minio/mc
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    entrypoint: /bin/sh -c "mc alias set minio http://minio:9000 minioadmin minioadmin && mc admin trace minio"
+    depends_on:
+      minio:
+        condition: service_healthy
