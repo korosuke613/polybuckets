@@ -2,37 +2,54 @@
 <html>
 
 <head>
-    <title>{{.Bucket}}/{{.Prefix}}</title>
+  <title>{{.Bucket}}/{{.Prefix}} - polybuckets</title>
 </head>
 
 <style>
-    body {
-      font-family: "Helvetica Neue",
-        Arial,
-        "Hiragino Kaku Gothic ProN",
-        "Hiragino Sans",
-        Meiryo,
-        sans-serif;
-    }
+  body {
+    font-family: "Helvetica Neue",
+      Arial,
+      "Hiragino Kaku Gothic ProN",
+      "Hiragino Sans",
+      Meiryo,
+      sans-serif;
+  }
+
+  a {
+    text-decoration: none;
+  }
 </style>
 
 <body>
-    <h1>{{.Bucket}}/{{.Prefix}}</h1>
-    <ul>
-      {{if .ParentPrefix}}
-      <li><a href="/{{.Bucket}}/{{.ParentPrefix}}">📁 ..</a></li>
-      {{else if .Prefix}}
-      <li><a href="/{{.Bucket}}/">📁 ..</a></li>
-      {{else if .Bucket}}
-      <li><a href="/">📁 ..</a></li>
-      {{end}}
-      {{range .Objects}}
-          {{if .IsDirectory}}
-              <li><a href="/{{$.Bucket}}/{{.Name}}">📁 {{.ShortName}}</a></li>
-          {{else}}
-              <li><a href="/download/{{$.Bucket}}/{{.Name}}" download>📄 {{.ShortName}}</a> ({{.LastModified.Format "2006-01-02T15:04:05Z"}}, {{.Size}})</li>
-          {{end}}
-      {{end}}
-    </ul>
+  <h1>{{.Bucket}}/{{.Prefix}}</h1>
+  <ul>
+    {{if .ParentPrefix}}
+    <li><a href="/{{.Bucket}}/{{.ParentPrefix}}">📁 ..</a></li>
+    {{else if .Prefix}}
+    <li><a href="/{{.Bucket}}/">📁 ..</a></li>
+    {{else if .Bucket}}
+    <li><a href="/">📁 ..</a></li>
+    {{end}}
+    {{range .Objects}}
+    {{if .IsDirectory}}
+    <li><a href="/{{$.Bucket}}/{{.Name}}">📁 {{.ShortName}}</a></li>
+    {{else}}
+    <li><a href="/download/{{$.Bucket}}/{{.Name}}" download>📄 {{.ShortName}}</a> ({{.LastModified.Format
+      "2006-01-02T15:04:05Z"}}, {{.Size}})</li>
+    {{end}}
+    {{end}}
+  </ul>
+
+  <br />
+
+  <footer>
+    <p>
+      <a href="https://github.com/korosuke613/polybuckets" target="_blank" rel="noopener noreferrer"><b>polybuckets</b>
+        - Simple browser app for S3 compatible services.</a>
+      <br />
+      © 2025 korosuke613
+    </p>
+  </footer>
 </body>
+
 </html>
