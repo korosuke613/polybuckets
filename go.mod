@@ -1,4 +1,4 @@
-module github.com/korosuke613/textbase-s3-browser
+module github.com/korosuke613/polybuckets
 
 go 1.23.3
 
