@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/korosuke613/textbase-s3-browser/internal"
-	"github.com/korosuke613/textbase-s3-browser/internal/s3client"
+	"github.com/korosuke613/polybuckets/internal"
+	"github.com/korosuke613/polybuckets/internal/s3client"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -79,11 +79,15 @@ func main() {
 		return handleRequest(c.Request().Context(), c, client, path)
 	})
 
-	port := os.Getenv("PORT")
+	port := os.Getenv("POLIBACKETSU_PORT")
 	if port == "" {
 		port = "1323"
 	}
-	e.Logger.Fatal(e.Start(":" + port))
+	ip := os.Getenv("POLIBACKETSU_IP_ADDRESS")
+	if ip == "" {
+		ip = "localhost"
+	}
+	e.Logger.Fatal(e.Start(ip + ":" + port))
 }
 
 func handleRequest(ctx context.Context, c echo.Context, client *s3client.Client, path string) error {
