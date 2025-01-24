@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"html/template"
 	"io"
 	"net/http"
@@ -15,6 +16,9 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
+//go:embed templates/*.html
+var templates embed.FS
+
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -22,10 +26,13 @@ func main() {
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		Filesystem: http.FS(templates),
+	}))
 
 	// Template renderer setup
 	e.Renderer = &TemplateRenderer{
-		templates: template.Must(template.ParseGlob("templates/*.html")),
+		templates: template.Must(template.ParseFS(templates, "templates/*.html")),
 	}
 
 	// Initialize S3 client
