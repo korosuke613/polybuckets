@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Error</title>
+  <title>Error - polybuckets</title>
 </head>
 
 <style>
@@ -14,14 +14,31 @@
       Meiryo,
       sans-serif;
   }
+
+  a {
+    text-decoration: none;
+  }
 </style>
 
 <body>
-    <h1>Error</h1>
-    <pre>{{.Error}}</pre>
-    {{if .Path}}<p>Path: {{.Path}}</p>{{end}}
-    {{if .Bucket}}<p>Bucket: {{.Bucket}}</p>{{end}}
-    {{if .Prefix}}<p>Prefix: {{.Prefix}}</p>{{end}}
+  <h1>Error</h1>
+  <pre>{{.Error}}</pre>
+  {{if .Path}}<p>Path: {{.Path}}</p>{{end}}
+  {{if .Bucket}}<p>Bucket: {{.Bucket}}</p>{{end}}
+  {{if .Prefix}}<p>Prefix: {{.Prefix}}</p>{{end}}
+
+
+  <br />
+
+  <footer>
+    <p>
+      <a href="https://github.com/korosuke613/polybuckets" target="_blank" rel="noopener noreferrer"><b>polybuckets</b>
+        - Simple browser app for S3 compatible services.</a>
+      <br />
+      © 2025 korosuke613
+    </p>
+  </footer>
+
 </body>
 
 </html>
