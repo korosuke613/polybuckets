@@ -32,6 +32,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	// デフォルト設定
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(os.Getenv("AWS_REGION")),
+		config.WithSharedConfigProfile(os.Getenv("AWS_PROFILE")),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)

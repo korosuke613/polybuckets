@@ -20,7 +20,7 @@ export AWS_ENDPOINT=  # optional
 go run ./main.go
 ```
 
-
+Also, you can use `AWS_PROFILE` instead of `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 
 ## Development
 
