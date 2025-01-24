@@ -56,15 +56,18 @@ jobs:
       matrix:
         os:
           - linux
-          - windows
           - darwin
         arch:
           - amd64
           - arm64
+        exclude:
+          - os: darwin
+            arch: amd64
     uses: slsa-framework/slsa-github-generator/.github/workflows/builder_go_slsa3.yml@v2.0.0
     with:
       go-version-file: go.mod
-      evaluated-envs: "GOOS:${{matrix.os}}, GOARCH:${{matrix.arch}}, COMMIT_DATE:${{needs.args.outputs.commit-date}}, COMMIT:${{needs.args.outputs.commit}}, VERSION:${{needs.args.outputs.version}}, TREE_STATE:${{needs.args.outputs.tree-state}}"
+      config-file: .slsa-goreleaser/${{matrix.os}}-${{matrix.arch}}.yaml
+      evaluated-envs: "COMMIT_DATE:${{needs.args.outputs.commit-date}}, COMMIT:${{needs.args.outputs.commit}}, VERSION:${{needs.args.outputs.version}}, TREE_STATE:${{needs.args.outputs.tree-state}}"
       # =============================================================================================================
       #     Optional: For more options, see https://github.com/slsa-framework/slsa-github-generator#golang-projects
       # =============================================================================================================
