@@ -12,15 +12,10 @@ flags:
   - -ldflags="-s -w"
 
 # The OS to compile for. `GOOS` env variable will be set to this value.
-goos: 
-  - linux
-  - darwin
-  - windows
+goos: {{ .Env.GOOS }}
 
 # The architecture to compile for. `GOARCH` env variable will be set to this value.
-goarch: 
-  - amd64
-  - arm64
+goarch: {{ .Env.GOARCH }}
 
 # (Optional) Entrypoint to compile.
 # main: ./path/to/main.go
