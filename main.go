@@ -8,10 +8,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
-	"strings"
 
 	"github.com/korosuke613/polybuckets/internal"
+	"github.com/korosuke613/polybuckets/internal/env"
 	"github.com/korosuke613/polybuckets/internal/s3client"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -27,7 +26,13 @@ func main() {
 	slog.SetDefault(internal.NewJsonLogger())
 
 	e := echo.New()
-	e.Use(middleware.Logger())
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: `{"time":"${time_rfc3339_nano}","level":"INFO","msg":"access log","value":` +
+			`{"remote_ip":"${remote_ip}",` +
+			`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
+			`"status":${status},"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
+			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}}` + "\n",
+	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
 		Filesystem: http.FS(templates),
@@ -91,11 +96,13 @@ func main() {
 		return handleRequest(c.Request().Context(), c, client, path)
 	})
 
-	port := os.Getenv("PB_PORT")
+	pbConfig := env.LoadPBConfig()
+	slog.Info("loaded config", "config", pbConfig)
+	port := pbConfig.Port
 	if port == "" {
 		port = "1323"
 	}
-	ip := os.Getenv("PB_IP_ADDRESS")
+	ip := pbConfig.IPAddress
 	if ip == "" {
 		ip = "0.0.0.0"
 	}

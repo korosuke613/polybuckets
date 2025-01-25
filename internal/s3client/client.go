@@ -3,7 +3,6 @@ package s3client
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/korosuke613/polybuckets/internal/env"
 )
 
 // S3Clientインターフェースで必要な操作を定義
@@ -29,10 +29,10 @@ type ClientOption func(*Client) error
 
 // NewClient コンストラクタでオプションを受け取る
 func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
-	// デフォルト設定
+	pbConfig := env.LoadPBConfig()
 	cfg, err := config.LoadDefaultConfig(ctx,
-		config.WithRegion(os.Getenv("AWS_REGION")),
-		config.WithSharedConfigProfile(os.Getenv("AWS_PROFILE")),
+		config.WithRegion(pbConfig.AWSRegion),
+		config.WithSharedConfigProfile(pbConfig.AWSProfile),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)
@@ -40,8 +40,13 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 
 	client := &Client{
 		s3Client: s3.NewFromConfig(cfg, func(o *s3.Options) {
-			if endpoint := os.Getenv("AWS_ENDPOINT"); endpoint != "" {
-				o.BaseEndpoint = aws.String(endpoint)
+			// ログ出力に checksum validation skipped の警告が出るのを抑制
+			// e.g. SDK 2025/01/26 02:05:17 WARN Response has no supported checksum. Not validating response payload.
+			o.DisableLogOutputChecksumValidationSkipped = true
+
+			// エンドポイントが設定されている場合は、そのエンドポイントを使用する。パススタイルを強制
+			if pbConfig.AWSEndpoint != "" {
+				o.BaseEndpoint = aws.String(pbConfig.AWSEndpoint)
 				o.UsePathStyle = true
 			}
 		}),
