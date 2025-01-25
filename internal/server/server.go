@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"html/template"
@@ -8,6 +9,8 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strconv"
+	"time"
 
 	"github.com/korosuke613/polybuckets/internal"
 	"github.com/korosuke613/polybuckets/internal/env"
@@ -42,7 +45,24 @@ func SetupMiddleware(e *echo.Echo, templates embed.FS) {
 			`{"remote_ip":"${remote_ip}",` +
 			`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
 			`"status":${status},"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
-			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}}` + "\n",
+			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}${custom}}}` + "\n",
+		CustomTagFunc: func(c echo.Context, buf *bytes.Buffer) (int, error) {
+			writeString := ""
+
+			// if ListObject cache hit, output to log
+			hitCache := c.Get("hitCache")
+			if hitCache != nil {
+				writeString += `,"hit_cache":` + strconv.FormatBool(hitCache.(bool))
+
+				cacheExpire := c.Get("cacheExpire")
+				if hitCache == true && cacheExpire != nil {
+					writeString += `,"cache_expire":"` + cacheExpire.(string) + `"`
+					c.Set("cacheExpire", nil)
+				}
+			}
+
+			return buf.WriteString(writeString)
+		},
 	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
@@ -56,6 +76,7 @@ func SetupMiddleware(e *echo.Echo, templates embed.FS) {
 func SetupRoutes(e *echo.Echo, ctx context.Context) {
 	// Initialize S3 client
 	client, err := s3client.NewClient(ctx)
+	client.CacheDuration = env.PBConfig.CacheDuration
 	if err != nil {
 		e.Logger.Fatal("Failed to initialize S3 client: ", err)
 	}
@@ -118,7 +139,26 @@ func handleRequest(ctx context.Context, c echo.Context, client *s3client.Client,
 	default:
 		// List objects in a bucket
 		bucket, parentPrefix, prefix := internal.ParsePath(path)
-		objects, err := client.ListObjects(ctx, bucket, prefix)
+		// if the query parameter `refresh` is set to `true`, clear the cache
+		if c.QueryParam("refresh") == "true" {
+			client.ClearListObjectsCache(ctx, bucket, prefix)
+		}
+
+		objects, hitCache, err := client.ListObjects(ctx, bucket, prefix)
+
+		c.Set("hitCache", hitCache)
+		var cacheExpire time.Time
+		if hitCache == true {
+			cacheEntry := client.GetListObjectsCacheEntry(ctx, bucket, prefix)
+			if cacheEntry != nil {
+				cacheExpire = cacheEntry.Expiry
+				c.Set("cacheExpire", cacheExpire.Format(time.RFC3339))
+			}
+		}
+
+		// Clear old cache entries
+		go client.ClearOldListObjectsCache(ctx)
+
 		if err != nil {
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
 				"Error":        err.Error(),
@@ -133,12 +173,14 @@ func handleRequest(ctx context.Context, c echo.Context, client *s3client.Client,
 			"ParentPrefix": parentPrefix,
 			"Prefix":       prefix,
 			"Objects":      objects,
+			"HitCache":     hitCache,
+			"LastCached":   cacheExpire.Add(-client.CacheDuration).UTC(),
 		})
 	}
 }
 
 // StartServer starts the Echo server with the provided configuration.
-func StartServer(e *echo.Echo, pbConfig *env.PBConfig) {
+func StartServer(e *echo.Echo, pbConfig *env.PBConfigType) {
 	port := pbConfig.Port
 	if port == "" {
 		port = "1323"

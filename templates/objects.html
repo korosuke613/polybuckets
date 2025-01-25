@@ -22,6 +22,14 @@
 
 <body>
   <h1>{{.Bucket}}/{{.Prefix}}</h1>
+
+  <div style="height: 13px;">
+    {{if .HitCache}}
+    <p style="font-size: 13px;">⚠️ Loaded from cache. Last updated: <span class="date">{{.LastCached.Format
+        "2006-01-02T15:04:05Z" }}</span>. <a href="/{{.Bucket}}/{{.Prefix}}?refresh=true">Refresh</a>.</p>
+    {{end}}
+  </div>
+
   <ul>
     {{if .ParentPrefix}}
     <li><a href="/{{.Bucket}}/{{.ParentPrefix}}">📁 ..</a></li>
@@ -34,8 +42,8 @@
     {{if .IsDirectory}}
     <li><a href="/{{$.Bucket}}/{{.Name}}">📁 {{.ShortName}}</a></li>
     {{else}}
-    <li><a href="/download/{{$.Bucket}}/{{.Name}}" download>📄 {{.ShortName}}</a> ({{.LastModified.Format
-      "2006-01-02T15:04:05Z"}}, {{.Size}})</li>
+    <li><a href="/download/{{$.Bucket}}/{{.Name}}" download>📄 {{.ShortName}}</a> (<span
+        class="date">{{.LastModified.Format "2006-01-02T15:04:05Z"}}</span>, {{.Size}})</li>
     {{end}}
     {{end}}
   </ul>
@@ -43,7 +51,7 @@
   <br />
 
   <footer>
-    <p>
+    <p style="font-size: 13px;">
       <a href="https://github.com/korosuke613/polybuckets" target="_blank" rel="noopener noreferrer"><b>polybuckets</b>
         - Simple browser app for S3 compatible services.</a>
       <br />
@@ -51,5 +59,26 @@
     </p>
   </footer>
 </body>
+
+<script>
+  function getTimezoneOffset(offset) {
+    const offsetHours = Math.floor(Math.abs(offset / 60));
+    const offsetMins = Math.abs(offset % 60);
+    return (offset > 0 ? '-' : '+') + (offsetHours < 10 ? '0' : '') + offsetHours + ':' + (offsetMins < 10 ? '0' : '') + offsetMins;
+  }
+
+  // Convert UTC to browser local time
+  const dates = document.querySelectorAll('.date');
+  console.log(dates);
+  dates.forEach((date) => {
+    const utc = date.textContent;
+    const intlOptions = Intl.DateTimeFormat().resolvedOptions()
+    const hrs = getTimezoneOffset(new Date().getTimezoneOffset());
+    date.textContent = `${new Date(utc).toLocaleString("sv-SE", {
+      timeZone: intlOptions.timeZone
+    })} ${hrs}`;
+  });
+</script>
+
 
 </html>
