@@ -82,13 +82,7 @@ func main() {
 		}
 		defer result.Body.Close()
 
-		// ダウンロード用ヘッダーを設定
-		c.Response().Header().Set(echo.HeaderContentType, "application/octet-stream")
-		c.Response().Header().Set("Content-Disposition", "attachment; filename=\""+key[strings.LastIndex(key, "/")+1:]+"\"")
-
-		// コンテンツをストリーミング
-		_, err = io.Copy(c.Response().Writer, result.Body)
-		return err
+		return c.Stream(http.StatusOK, "application/octet-stream", result.Body)
 	})
 
 	e.GET("/*", func(c echo.Context) error {
