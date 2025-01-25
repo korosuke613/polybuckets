@@ -13,6 +13,7 @@ const (
 	EnvKeyIPAddress   = "PB_IP_ADDRESS"
 )
 
+// PBConfig holds the configuration values loaded from environment variables.
 type PBConfig struct {
 	AWSRegion   string
 	AWSProfile  string
@@ -21,6 +22,7 @@ type PBConfig struct {
 	IPAddress   string
 }
 
+// LoadPBConfig loads the configuration from environment variables.
 func LoadPBConfig() *PBConfig {
 	pbConfig := &PBConfig{
 		AWSRegion:   os.Getenv("AWS_REGION"),

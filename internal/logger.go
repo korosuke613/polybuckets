@@ -5,6 +5,7 @@ import (
 	"os"
 )
 
+// NewJsonLogger creates a new JSON logger.
 func NewJsonLogger() *slog.Logger {
 	return slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{}))
 }

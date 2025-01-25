@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TestParsePath tests the ParsePath function with various path inputs.
 func TestParsePath(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -61,6 +62,7 @@ func TestParsePath(t *testing.T) {
 	}
 }
 
+// TestJoinPath tests the joinPath function with various parts inputs.
 func TestJoinPath(t *testing.T) {
 	tests := []struct {
 		name     string

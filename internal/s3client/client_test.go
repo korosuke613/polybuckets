@@ -22,18 +22,22 @@ type MockS3Client struct {
 	getObjectError    error
 }
 
+// ListBuckets mocks the ListBuckets method of S3Client
 func (m *MockS3Client) ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error) {
 	return m.listBucketsOutput, m.listBucketsError
 }
 
+// ListObjectsV2 mocks the ListObjectsV2 method of S3Client
 func (m *MockS3Client) ListObjectsV2(ctx context.Context, params *s3.ListObjectsV2Input, optFns ...func(*s3.Options)) (*s3.ListObjectsV2Output, error) {
 	return m.listObjectsOutput, m.listObjectsError
 }
 
+// GetObject mocks the GetObject method of S3Client
 func (m *MockS3Client) GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 	return m.getObjectOutput, m.getObjectError
 }
 
+// TestClient_ListBuckets tests the ListBuckets method of Client
 func TestClient_ListBuckets(t *testing.T) {
 	mockTime := time.Now()
 
@@ -89,6 +93,7 @@ func TestClient_ListBuckets(t *testing.T) {
 	}
 }
 
+// TestClient_ListObjects tests the ListObjects method of Client
 func TestClient_ListObjects(t *testing.T) {
 	mockTime := time.Now()
 
@@ -166,6 +171,7 @@ func TestClient_ListObjects(t *testing.T) {
 	}
 }
 
+// TestClient_GetObject tests the GetObject method of Client
 func TestClient_GetObject(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -208,6 +214,7 @@ func TestClient_GetObject(t *testing.T) {
 	}
 }
 
+// TestFormatSize tests the formatSize function with various size inputs.
 func TestFormatSize(t *testing.T) {
 	tests := []struct {
 		input    int64
