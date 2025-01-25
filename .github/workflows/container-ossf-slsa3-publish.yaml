@@ -36,7 +36,7 @@ jobs:
           tag=$(echo ${GIT_REF} | cut -d'/' -f3)
 
           # Build & push the image. Save the image name.
-          image_and_digest=$(ko build --tags="${tag}" .)
+          image_and_digest=$(ko build --bare --tags=latest --tags="${tag}" .)
 
           # Output the image name and digest so we can generate provenance.
           image=$(echo "${image_and_digest}" | cut -d':' -f1)
