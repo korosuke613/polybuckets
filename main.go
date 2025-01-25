@@ -29,6 +29,5 @@ func main() {
 	server.SetupRoutes(e, ctx)
 
 	// Load configuration and start server
-	pbConfig := env.LoadPBConfig()
-	server.StartServer(e, pbConfig)
+	server.StartServer(e, env.PBConfig)
 }

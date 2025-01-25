@@ -157,8 +157,8 @@ func TestClient_ListObjects(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := &Client{s3Client: tt.mock}
-			result, err := client.ListObjects(context.Background(), tt.bucket, tt.prefix)
+			client := &Client{s3Client: tt.mock, listObjectsCacheEntry: make(map[string]ListObjectsCacheEntry)}
+			result, _, err := client.ListObjects(context.Background(), tt.bucket, tt.prefix)
 
 			if tt.expectedErr != "" {
 				assert.ErrorContains(t, err, tt.expectedErr)

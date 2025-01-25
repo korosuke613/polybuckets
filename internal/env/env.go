@@ -2,6 +2,7 @@ package env
 
 import (
 	"os"
+	"time"
 )
 
 const (
@@ -13,18 +14,19 @@ const (
 	EnvKeyIPAddress   = "PB_IP_ADDRESS"
 )
 
-// PBConfig holds the configuration values loaded from environment variables.
-type PBConfig struct {
-	AWSRegion   string
-	AWSProfile  string
-	AWSEndpoint string
-	Port        string
-	IPAddress   string
+// PBConfigType holds the configuration values loaded from environment variables.
+type PBConfigType struct {
+	AWSRegion     string
+	AWSProfile    string
+	AWSEndpoint   string
+	Port          string
+	IPAddress     string
+	CacheDuration time.Duration
 }
 
 // LoadPBConfig loads the configuration from environment variables.
-func LoadPBConfig() *PBConfig {
-	pbConfig := &PBConfig{
+func loadPBConfig() *PBConfigType {
+	pbConfig := &PBConfigType{
 		AWSRegion:   os.Getenv("AWS_REGION"),
 		AWSProfile:  os.Getenv("AWS_PROFILE"),
 		AWSEndpoint: os.Getenv("AWS_ENDPOINT"),
@@ -32,5 +34,20 @@ func LoadPBConfig() *PBConfig {
 		IPAddress:   os.Getenv("PB_IP_ADDRESS"),
 	}
 
+	if os.Getenv("PB_CACHE_DURATION") != "" {
+		duration, err := time.ParseDuration(os.Getenv("CACHE_DURATION"))
+		if err == nil {
+			pbConfig.CacheDuration = duration
+		}
+	} else {
+		pbConfig.CacheDuration = 60 * time.Minute
+	}
+
+	// Set UTC as the default timezone
+	time.Local = time.UTC
+
 	return pbConfig
 }
+
+// PBConfig holds the configuration values loaded from environment variables.
+var PBConfig = loadPBConfig()
