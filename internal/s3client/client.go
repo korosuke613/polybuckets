@@ -13,21 +13,22 @@ import (
 	"github.com/korosuke613/polybuckets/internal/env"
 )
 
-// S3Clientインターフェースで必要な操作を定義
+// S3Client defines the operations required for interacting with S3.
 type S3Client interface {
 	ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error)
 	ListObjectsV2(ctx context.Context, params *s3.ListObjectsV2Input, optFns ...func(*s3.Options)) (*s3.ListObjectsV2Output, error)
 	GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
 }
 
+// Client wraps the S3 client and provides additional functionality.
 type Client struct {
 	s3Client S3Client
 }
 
-// Client設定オプション用の関数型
+// ClientOption defines a function type for configuring the Client.
 type ClientOption func(*Client) error
 
-// NewClient コンストラクタでオプションを受け取る
+// NewClient creates a new S3 client with the provided options.
 func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	pbConfig := env.LoadPBConfig()
 	cfg, err := config.LoadDefaultConfig(ctx,
@@ -40,11 +41,11 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 
 	client := &Client{
 		s3Client: s3.NewFromConfig(cfg, func(o *s3.Options) {
-			// ログ出力に checksum validation skipped の警告が出るのを抑制
+			// Suppress warnings about checksum validation skipped in log output
 			// e.g. SDK 2025/01/26 02:05:17 WARN Response has no supported checksum. Not validating response payload.
 			o.DisableLogOutputChecksumValidationSkipped = true
 
-			// エンドポイントが設定されている場合は、そのエンドポイントを使用する。パススタイルを強制
+			// Use the specified endpoint if set, and enforce path style
 			if pbConfig.AWSEndpoint != "" {
 				o.BaseEndpoint = aws.String(pbConfig.AWSEndpoint)
 				o.UsePathStyle = true
@@ -52,7 +53,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 		}),
 	}
 
-	// オプション適用
+	// Apply options
 	for _, opt := range opts {
 		if err := opt(client); err != nil {
 			return nil, fmt.Errorf("failed to apply client option: %w", err)
@@ -62,7 +63,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	return client, nil
 }
 
-// WithCustomClient カスタムS3クライアントを注入するオプション
+// WithCustomClient injects a custom S3 client.
 func WithCustomClient(cli S3Client) ClientOption {
 	return func(c *Client) error {
 		c.s3Client = cli
@@ -70,7 +71,7 @@ func WithCustomClient(cli S3Client) ClientOption {
 	}
 }
 
-// WithConfig AWS設定をカスタマイズするオプション
+// WithConfig customizes the AWS configuration.
 func WithConfig(cfg aws.Config) ClientOption {
 	return func(c *Client) error {
 		c.s3Client = s3.NewFromConfig(cfg)
@@ -78,11 +79,13 @@ func WithConfig(cfg aws.Config) ClientOption {
 	}
 }
 
+// BucketInfo contains information about an S3 bucket.
 type BucketInfo struct {
 	Name         string
 	CreationDate time.Time
 }
 
+// ListBuckets lists all S3 buckets.
 func (c *Client) ListBuckets(ctx context.Context) ([]BucketInfo, error) {
 	result, err := c.s3Client.ListBuckets(ctx, &s3.ListBucketsInput{})
 	if err != nil {
@@ -99,6 +102,7 @@ func (c *Client) ListBuckets(ctx context.Context) ([]BucketInfo, error) {
 	return buckets, nil
 }
 
+// ObjectInfo contains information about an S3 object.
 type ObjectInfo struct {
 	Name         string
 	ShortName    string
@@ -107,8 +111,9 @@ type ObjectInfo struct {
 	LastModified time.Time
 }
 
+// ListObjects lists objects in the specified S3 bucket and prefix.
 func (c *Client) ListObjects(ctx context.Context, bucket, prefix string) ([]ObjectInfo, error) {
-	// もし prefix の末尾に / がない場合は付与する
+	// Add a trailing slash to the prefix if it doesn't already have one
 	if prefix != "" && !strings.HasSuffix(prefix, "/") {
 		prefix += "/"
 	}
@@ -133,12 +138,12 @@ func (c *Client) ListObjects(ctx context.Context, bucket, prefix string) ([]Obje
 	}
 
 	for _, obj := range result.Contents {
-		// もし現在の prefix と同じ場合はスキップ
+		 // Skip if the current prefix is the same
 		if *obj.Key == prefix {
 			continue
 		}
 
-		// size を SI 接頭辞付きの文字列に変換
+		// Convert size to a string with SI prefixes
 		size := formatSize(*obj.Size)
 
 		objects = append(objects, ObjectInfo{
@@ -153,6 +158,7 @@ func (c *Client) ListObjects(ctx context.Context, bucket, prefix string) ([]Obje
 	return objects, nil
 }
 
+// GetObject retrieves an object from the specified S3 bucket and key.
 func (c *Client) GetObject(ctx context.Context, bucket, key string) (*s3.GetObjectOutput, error) {
 	output, err := c.s3Client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
@@ -164,7 +170,7 @@ func (c *Client) GetObject(ctx context.Context, bucket, key string) (*s3.GetObje
 	return output, nil
 }
 
-// 数値を SI 接頭辞付きの文字列に変換
+// formatSize converts a size in bytes to a human-readable string with SI prefixes.
 func formatSize(size int64) string {
 	var unit string
 	var value float64

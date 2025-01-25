@@ -19,13 +19,16 @@ import (
 //go:embed templates/*.html
 var templates embed.FS
 
+// main is the entry point of the application. It sets up the server and routes.
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Set up the default logger
 	slog.SetDefault(internal.NewJsonLogger())
 
 	e := echo.New()
+	// Middleware setup
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: `{"time":"${time_rfc3339_nano}","level":"INFO","msg":"access log","value":` +
 			`{"remote_ip":"${remote_ip}",` +
@@ -60,12 +63,12 @@ func main() {
 		return c.NoContent(http.StatusNotFound)
 	})
 
-	// ファイルダウンロード用のルート
+	// Route for file download
 	e.GET("/download/:bucket/*", func(c echo.Context) error {
 		bucket := c.Param("bucket")
 		key := c.Param("*")
 
-		// key を unescape
+		// Unescape the key
 		key, err := url.QueryUnescape(key)
 		if err != nil {
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
@@ -73,7 +76,7 @@ func main() {
 			})
 		}
 
-		// S3からオブジェクトを取得
+		// Get the object from S3
 		result, err := client.GetObject(c.Request().Context(), bucket, key)
 		if err != nil {
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
@@ -85,11 +88,13 @@ func main() {
 		return c.Stream(http.StatusOK, "application/octet-stream", result.Body)
 	})
 
+	// Catch-all route handler
 	e.GET("/*", func(c echo.Context) error {
 		path := c.Request().URL.Path
 		return handleRequest(c.Request().Context(), c, client, path)
 	})
 
+	// Load configuration
 	pbConfig := env.LoadPBConfig()
 	slog.Info("loaded config", "config", pbConfig)
 	port := pbConfig.Port
@@ -104,9 +109,11 @@ func main() {
 	e.Logger.Fatal(e.Start(ip + ":" + port))
 }
 
+// handleRequest handles incoming HTTP requests and routes them to the appropriate S3 operations.
 func handleRequest(ctx context.Context, c echo.Context, client *s3client.Client, path string) error {
 	switch {
 	case path == "/":
+		// List all buckets
 		buckets, err := client.ListBuckets(ctx)
 		if err != nil {
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
@@ -117,6 +124,7 @@ func handleRequest(ctx context.Context, c echo.Context, client *s3client.Client,
 		return c.Render(http.StatusOK, "buckets.html", buckets)
 
 	default:
+		// List objects in a bucket
 		bucket, parentPrefix, prefix := internal.ParsePath(path)
 		objects, err := client.ListObjects(ctx, bucket, prefix)
 		if err != nil {
@@ -137,12 +145,12 @@ func handleRequest(ctx context.Context, c echo.Context, client *s3client.Client,
 	}
 }
 
-// TemplateRenderer implements echo.Renderer interface
+// TemplateRenderer implements echo.Renderer interface for rendering HTML templates.
 type TemplateRenderer struct {
 	templates *template.Template
 }
 
-// Render renders template
+// Render renders the specified template with the provided data.
 func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	return t.templates.ExecuteTemplate(w, name, data)
 }
