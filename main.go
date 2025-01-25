@@ -5,6 +5,7 @@ import (
 	"embed"
 	"html/template"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -23,12 +24,16 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	slog.SetDefault(internal.NewJsonLogger())
+
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
 		Filesystem: http.FS(templates),
 	}))
+	e.HideBanner = true
+	e.HidePort = true
 
 	// Template renderer setup
 	e.Renderer = &TemplateRenderer{
@@ -86,14 +91,15 @@ func main() {
 		return handleRequest(c.Request().Context(), c, client, path)
 	})
 
-	port := os.Getenv("POLIBACKETSU_PORT")
+	port := os.Getenv("PB_PORT")
 	if port == "" {
 		port = "1323"
 	}
-	ip := os.Getenv("POLIBACKETSU_IP_ADDRESS")
+	ip := os.Getenv("PB_IP_ADDRESS")
 	if ip == "" {
-		ip = "localhost"
+		ip = "0.0.0.0"
 	}
+	slog.Info("starting server", "ip", ip, "port", port)
 	e.Logger.Fatal(e.Start(ip + ":" + port))
 }
 
