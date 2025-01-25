@@ -5,12 +5,12 @@ import (
 	"embed"
 	"html/template"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
-	"strings"
 
 	"github.com/korosuke613/polybuckets/internal"
+	"github.com/korosuke613/polybuckets/internal/env"
 	"github.com/korosuke613/polybuckets/internal/s3client"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -23,12 +23,22 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	slog.SetDefault(internal.NewJsonLogger())
+
 	e := echo.New()
-	e.Use(middleware.Logger())
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: `{"time":"${time_rfc3339_nano}","level":"INFO","msg":"access log","value":` +
+			`{"remote_ip":"${remote_ip}",` +
+			`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
+			`"status":${status},"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
+			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}}` + "\n",
+	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
 		Filesystem: http.FS(templates),
 	}))
+	e.HideBanner = true
+	e.HidePort = true
 
 	// Template renderer setup
 	e.Renderer = &TemplateRenderer{
@@ -72,13 +82,7 @@ func main() {
 		}
 		defer result.Body.Close()
 
-		// ダウンロード用ヘッダーを設定
-		c.Response().Header().Set(echo.HeaderContentType, "application/octet-stream")
-		c.Response().Header().Set("Content-Disposition", "attachment; filename=\""+key[strings.LastIndex(key, "/")+1:]+"\"")
-
-		// コンテンツをストリーミング
-		_, err = io.Copy(c.Response().Writer, result.Body)
-		return err
+		return c.Stream(http.StatusOK, "application/octet-stream", result.Body)
 	})
 
 	e.GET("/*", func(c echo.Context) error {
@@ -86,14 +90,17 @@ func main() {
 		return handleRequest(c.Request().Context(), c, client, path)
 	})
 
-	port := os.Getenv("POLIBACKETSU_PORT")
+	pbConfig := env.LoadPBConfig()
+	slog.Info("loaded config", "config", pbConfig)
+	port := pbConfig.Port
 	if port == "" {
 		port = "1323"
 	}
-	ip := os.Getenv("POLIBACKETSU_IP_ADDRESS")
+	ip := pbConfig.IPAddress
 	if ip == "" {
-		ip = "localhost"
+		ip = "0.0.0.0"
 	}
+	slog.Info("starting server", "ip", ip, "port", port)
 	e.Logger.Fatal(e.Start(ip + ":" + port))
 }
 
