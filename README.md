@@ -15,12 +15,29 @@
 export AWS_REGION=
 export AWS_ACCESS_KEY_ID=
 export AWS_SECRET_ACCESS_KEY=
-export AWS_ENDPOINT=  # optional
 
-go run ./main.go
+docker run -p 1323:1323 --env AWS_REGION=$AWS_REGION --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY ghcr.io/korosuke613/polybuckets:latest
 ```
 
 Also, you can use `AWS_PROFILE` instead of `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
+
+```console
+export AWS_REGION=
+export AWS_PROFILE=
+
+docker run -p 1323:1323 --env AWS_REGION=$AWS_REGION --env AWS_PROFILE=$AWS_PROFILE -v ~/.aws:/home/nonroot/.aws ghcr.io/korosuke613/polybuckets:latest
+```
+
+## Configuration
+
+### Environment Variables
+
+- `AWS_REGION`: (Required) Specify the AWS region.
+- `AWS_PROFILE`: Specify the AWS profile. This can be used in place of `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
+- `AWS_ENDPOINT`: Specify the endpoint for the S3 compatible service.
+- `PB_PORT`: Specify the port that the server listens on (the default is `1323`).
+- `PB_IP_ADDRESS`: Specify the IP address that the server listens on (the default is `0.0.0.0`).
+- `PB_CACHE_DURATION`: Specify the aws s3 list objects cache expiration time (default is `60m`).
 
 ## Development
 
@@ -47,21 +64,12 @@ Open localhost:1323 in your browser.
 Access log is shown in Terminal A.
 
 ```console
-❯ go run ./main.go
-
-   ____    __
-  / __/___/ /  ___
- / _// __/ _ \/ _ \
-/___/\__/_//_/\___/ v4.13.3
-High performance, minimalist Go web framework
-https://echo.labstack.com
-____________________________________O/_______
-                                    O\
-⇨ http server started on 127.0.0.1:1323
-{"time":"2025-01-24T14:00:03.178434+09:00","id":"","remote_ip":"127.0.0.1","host":"localhost:1323","method":"GET","uri":"/","user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0","status":200,"error":"","latency":7277916,"latency_human":"7.277916ms","bytes_in":0,"bytes_out":531}
-{"time":"2025-01-24T14:00:04.508854+09:00","id":"","remote_ip":"127.0.0.1","host":"localhost:1323","method":"GET","uri":"/bucket1/","user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0","status":200,"error":"","latency":5368375,"latency_human":"5.368375ms","bytes_in":0,"bytes_out":771}
-SDK 2025/01/24 14:00:05 WARN Response has no supported checksum. Not validating response payload.
-{"time":"2025-01-24T14:00:05.185905+09:00","id":"","remote_ip":"127.0.0.1","host":"localhost:1323","method":"GET","uri":"/download/bucket1/test_0.txt","user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0","status":200,"error":"","latency":6043958,"latency_human":"6.043958ms","bytes_in":0,"bytes_out":0}
+❯ go run main.go
+{"time":"2025-01-25T21:54:25.594383Z","level":"INFO","msg":"starting server","ip":"0.0.0.0","port":"1323"}
+{"time":"2025-01-25T21:54:39.748322Z","level":"INFO","msg":"access log","value":{"remote_ip":"::1","host":"localhost:1323","method":"GET","uri":"/","user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0","status":200,"error":"","latency":40673459,"latency_human":"40.673459ms","bytes_in":0,"bytes_out":818}}
+{"time":"2025-01-25T21:54:41.105367Z","level":"INFO","msg":"access log","value":{"remote_ip":"::1","host":"localhost:1323","method":"GET","uri":"/bucket2/","user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0","status":200,"error":"","latency":9485459,"latency_human":"9.485459ms","bytes_in":0,"bytes_out":1829,"hit_cache":false}}
+{"time":"2025-01-25T21:54:42.37454Z","level":"INFO","msg":"access log","value":{"remote_ip":"::1","host":"localhost:1323","method":"GET","uri":"/bucket2/hoge/","user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0","status":200,"error":"","latency":13514042,"latency_human":"13.514042ms","bytes_in":0,"bytes_out":1694,"hit_cache":false}}
+{"time":"2025-01-25T21:54:44.092354Z","level":"INFO","msg":"access log","value":{"remote_ip":"::1","host":"localhost:1323","method":"GET","uri":"/download/bucket2/hoge/test_2.txt","user_agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0","status":200,"error":"","latency":7519166,"latency_human":"7.519166ms","bytes_in":0,"bytes_out":34}}
 ```
 
 minio api call log is shown in Terminal B.
@@ -72,13 +80,8 @@ minio api call log is shown in Terminal B.
  ✔ Container tools-minio-1  Running                                                                                                                                                                     0.0s
  ✔ Container tools-mc-1     Running                                                                                                                                                                     0.0s
 Attaching to mc-1, minio-1
-mc-1     | 2025-01-24T05:00:03.175 [200 OK] s3.ListBuckets localhost:9000/?x-id=ListBuckets  192.168.107.1    979µs       ⇣  958.793µs  ↑ 131 B ↓ 545 B
-mc-1     | 2025-01-24T05:00:04.504 [200 OK] s3.ListObjectsV2 localhost:9000/bucket1?delimiter=%2F&list-type=2&prefix=  192.168.107.1    3.222ms      ⇣  3.172337ms  ↑ 131 B ↓ 721 B
-mc-1     | 2025-01-24T05:00:05.181 [200 OK] s3.GetObject localhost:9000/bucket1/test_0.txt?x-id=GetObject  192.168.107.1    2.83ms       ⇣  2.69067ms  ↑ 131 B ↓ 29 B
-mc-1     | 2025-01-24T05:00:06.284 [200 OK] s3.ListObjectsV2 localhost:9000/bucket1?delimiter=%2F&list-type=2&prefix=hoge%2F  192.168.107.1    2.098ms      ⇣  2.070085ms  ↑ 131 B ↓ 534 B
-mc-1     | 2025-01-24T05:00:07.179 [200 OK] s3.ListObjectsV2 localhost:9000/bucket1?delimiter=%2F&list-type=2&prefix=hoge%2Ffuga%2F  192.168.107.1    1.743ms      ⇣  1.718877ms  ↑ 131 B ↓ 484 B
-mc-1     | 2025-01-24T05:16:32.180 [200 OK] s3.ListBuckets localhost:9000/?x-id=ListBuckets  192.168.107.1    6.546ms      ⇣  5.283506ms  ↑ 131 B ↓ 545 B
-mc-1     | 2025-01-24T05:16:52.136 [200 OK] s3.ListObjectsV2 localhost:9000/bucket1?delimiter=%2F&list-type=2&prefix=  192.168.107.1    6.113ms      ⇣  6.085994ms  ↑ 131 B ↓ 721 B
-mc-1     | 2025-01-24T05:17:03.037 [200 OK] s3.ListObjectsV2 localhost:9000/bucket1?delimiter=%2F&list-type=2&prefix=hoge%2F  192.168.107.1    14.505ms     ⇣  14.471377ms  ↑ 131 B ↓ 534 B
-mc-1     | 2025-01-24T05:17:05.919 [200 OK] s3.GetObject localhost:9000/bucket1/hoge/test_2.txt?x-id=GetObject  192.168.107.1    5.577ms      ⇣  5.317323ms  ↑ 131 B ↓ 34 B
+mc-1     | 2025-01-25T21:54:39.740 [200 OK] s3.ListBuckets localhost:9000/?x-id=ListBuckets  192.168.107.1    6.236ms      ⇣  5.302117ms  ↑ 131 B ↓ 545 B
+mc-1     | 2025-01-25T21:54:41.098 [200 OK] s3.ListObjectsV2 localhost:9000/bucket2?delimiter=%2F&list-type=2&prefix=  192.168.107.1    5.658ms      ⇣  5.579237ms  ↑ 131 B ↓ 721 B
+mc-1     | 2025-01-25T21:54:42.369 [200 OK] s3.ListObjectsV2 localhost:9000/bucket2?delimiter=%2F&list-type=2&prefix=hoge%2F  192.168.107.1    3.875ms      ⇣  3.8491ms   ↑ 131 B ↓ 534 B
+mc-1     | 2025-01-25T21:54:44.087 [200 OK] s3.GetObject localhost:9000/bucket2/hoge/test_2.txt?x-id=GetObject  192.168.107.1    3.2ms        ⇣  2.90345ms  ↑ 131 B ↓ 34 B
 ```
