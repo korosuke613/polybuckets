@@ -49,7 +49,13 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 
 			// Use the specified endpoint if set, and enforce path style
 			if pbConfig.AWSEndpoint != "" {
-				o.BaseEndpoint = aws.String(pbConfig.AWSEndpoint)
+				// if endpoint without http/https is specified, add https
+				endpoint := pbConfig.AWSEndpoint 
+				if !strings.HasPrefix(pbConfig.AWSEndpoint, "http") {
+					endpoint = "http://" + endpoint
+				}
+
+				o.BaseEndpoint = aws.String(endpoint)
 				o.UsePathStyle = true
 			}
 		}),
