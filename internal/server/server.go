@@ -33,7 +33,7 @@ func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c 
 func NewEchoServer(templates embed.FS) *echo.Echo {
 	e := echo.New()
 	e.Renderer = &TemplateRenderer{
-		templates: template.Must(template.ParseFS(templates, "templates/*.html")),
+		templates: template.Must(template.ParseFS(templates, "templates/*.html", "templates/partials/*.html")),
 	}
 	return e
 }
@@ -75,6 +75,7 @@ func SetupMiddleware(e *echo.Echo, templates embed.FS) {
 // SetupRoutes sets up the routes for the Echo instance.
 func SetupRoutes(e *echo.Echo, ctx context.Context) {
 	// Initialize S3 client
+	siteName := env.PBConfig.SiteName
 	client, err := s3client.NewClient(ctx)
 	client.CacheDuration = env.PBConfig.CacheDuration
 	if err != nil {
@@ -99,7 +100,8 @@ func SetupRoutes(e *echo.Echo, ctx context.Context) {
 		key, err := url.QueryUnescape(key)
 		if err != nil {
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
-				"Error": err.Error(),
+				"SiteName": siteName,
+				"Error":    err.Error(),
 			})
 		}
 
@@ -107,7 +109,8 @@ func SetupRoutes(e *echo.Echo, ctx context.Context) {
 		result, err := client.GetObject(c.Request().Context(), bucket, key)
 		if err != nil {
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
-				"Error": err.Error(),
+				"SiteName": siteName,
+				"Error":    err.Error(),
 			})
 		}
 		defer result.Body.Close()
@@ -124,17 +127,30 @@ func SetupRoutes(e *echo.Echo, ctx context.Context) {
 
 // handleRequest handles incoming HTTP requests and routes them to the appropriate S3 operations.
 func handleRequest(ctx context.Context, c echo.Context, client *s3client.Client, path string) error {
+	siteName := env.PBConfig.SiteName
 	switch {
 	case path == "/":
 		// List all buckets
+
+		// ListBuckets を継承
+		type BucketsInfo struct {
+			Buckets  []s3client.BucketInfo
+			SiteName string
+		}
+
 		buckets, err := client.ListBuckets(ctx)
+		bucketsInfo := BucketsInfo{
+			Buckets:  buckets,
+			SiteName: siteName,
+		}
 		if err != nil {
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
-				"Error": err.Error(),
-				"Path":  "/",
+				"SiteName": siteName,
+				"Error":    err.Error(),
+				"Path":     "/",
 			})
 		}
-		return c.Render(http.StatusOK, "buckets.html", buckets)
+		return c.Render(http.StatusOK, "buckets.html", bucketsInfo)
 
 	default:
 		// List objects in a bucket
@@ -148,7 +164,7 @@ func handleRequest(ctx context.Context, c echo.Context, client *s3client.Client,
 
 		c.Set("hitCache", hitCache)
 		var cacheExpire time.Time
-		if hitCache == true {
+		if hitCache {
 			cacheEntry := client.GetListObjectsCacheEntry(ctx, bucket, prefix)
 			if cacheEntry != nil {
 				cacheExpire = cacheEntry.Expiry
@@ -161,6 +177,7 @@ func handleRequest(ctx context.Context, c echo.Context, client *s3client.Client,
 
 		if err != nil {
 			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
+				"SiteName":     siteName,
 				"Error":        err.Error(),
 				"Bucket":       bucket,
 				"ParentPrefix": parentPrefix,
@@ -169,6 +186,7 @@ func handleRequest(ctx context.Context, c echo.Context, client *s3client.Client,
 		}
 
 		return c.Render(http.StatusOK, "objects.html", map[string]interface{}{
+			"SiteName":     siteName,
 			"Bucket":       bucket,
 			"ParentPrefix": parentPrefix,
 			"Prefix":       prefix,

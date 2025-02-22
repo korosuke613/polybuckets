@@ -2,23 +2,10 @@
 <html>
 
 <head>
-  <title>Error - polybuckets</title>
+  <title>polybuckets</title>
 </head>
 
-<style>
-  body {
-    font-family: "Helvetica Neue",
-      Arial,
-      "Hiragino Kaku Gothic ProN",
-      "Hiragino Sans",
-      Meiryo,
-      sans-serif;
-  }
-
-  a {
-    text-decoration: none;
-  }
-</style>
+{{template "style" .}}
 
 <body>
   <h1>Error</h1>
@@ -27,18 +14,9 @@
   {{if .Bucket}}<p>Bucket: {{.Bucket}}</p>{{end}}
   {{if .Prefix}}<p>Prefix: {{.Prefix}}</p>{{end}}
 
-
   <br />
 
-  <footer>
-    <p>
-      <a href="https://github.com/korosuke613/polybuckets" target="_blank" rel="noopener noreferrer"><b>polybuckets</b>
-        - Simple browser app for S3 compatible services.</a>
-      <br />
-      © 2025 korosuke613
-    </p>
-  </footer>
-
+  {{template "footer" .}}
 </body>
 
 </html>

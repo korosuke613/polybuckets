@@ -22,6 +22,7 @@ type PBConfigType struct {
 	Port          string
 	IPAddress     string
 	CacheDuration time.Duration
+	SiteName      string
 }
 
 // LoadPBConfig loads the configuration from environment variables.
@@ -41,6 +42,12 @@ func loadPBConfig() *PBConfigType {
 		}
 	} else {
 		pbConfig.CacheDuration = 60 * time.Minute
+	}
+
+	if os.Getenv("PB_SITE_NAME") != "" {
+		pbConfig.SiteName = os.Getenv("PB_SITE_NAME")
+	} else {
+		pbConfig.SiteName = "polybuckets"
 	}
 
 	// Set UTC as the default timezone

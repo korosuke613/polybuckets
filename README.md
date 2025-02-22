@@ -38,6 +38,7 @@ docker run -p 1323:1323 --env AWS_REGION=$AWS_REGION --env AWS_PROFILE=$AWS_PROF
 - `PB_PORT`: Specify the port that the server listens on (the default is `1323`).
 - `PB_IP_ADDRESS`: Specify the IP address that the server listens on (the default is `0.0.0.0`).
 - `PB_CACHE_DURATION`: Specify the aws s3 list objects cache expiration time (default is `60m`).
+- `PB_SITE_NAME`: Specify the site name (default is `polybuckets`).
 
 ## Development
 
