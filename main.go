@@ -10,7 +10,7 @@ import (
 	"github.com/korosuke613/polybuckets/internal/server"
 )
 
-//go:embed templates/*.html
+//go:embed templates/*.html templates/partials/*.html
 var templates embed.FS
 
 // main is the entry point of the application. It sets up the server and routes.
