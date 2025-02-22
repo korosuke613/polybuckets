@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
   <title>{{.Bucket}}/{{.Prefix}} - {{.SiteName}}</title>
@@ -18,18 +18,23 @@
   </div>
 
   <ul>
+    <style>
+      .icon {
+        margin-right: 12px;
+      }
+    </style>
     {{if .ParentPrefix}}
-    <li><a href="/{{.Bucket}}/{{.ParentPrefix}}">📁 ..</a></li>
+    <li><a href="/{{.Bucket}}/{{.ParentPrefix}}"><span class="icon">📁</span>..</a></li>
     {{else if .Prefix}}
-    <li><a href="/{{.Bucket}}/">📁 ..</a></li>
+    <li><a href="/{{.Bucket}}/"><span class="icon">📁</span>..</a></li>
     {{else if .Bucket}}
-    <li><a href="/">📁 ..</a></li>
+    <li><a href="/"><span class="icon">📁</span>..</a></li>
     {{end}}
     {{range .Objects}}
     {{if .IsDirectory}}
-    <li><a href="/{{$.Bucket}}/{{.Name}}">📁 {{.ShortName}}</a></li>
+    <li><a href="/{{$.Bucket}}/{{.Name}}"><span class="icon">📁</span>{{.ShortName}}</a></li>
     {{else}}
-    <li><a href="/download/{{$.Bucket}}/{{.Name}}" download>📄 {{.ShortName}}</a> (<span
+    <li><a href="/download/{{$.Bucket}}/{{.Name}}" download><span class="icon">📄</span>{{.ShortName}}</a> (<span
         class="date">{{.LastModified.Format "2006-01-02T15:04:05Z"}}</span>, {{.Size}})</li>
     {{end}}
     {{end}}
