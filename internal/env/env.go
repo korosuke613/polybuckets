@@ -12,6 +12,7 @@ const (
 	EnvKeyAWSEndpoint = "AWS_ENDPOINT"
 	EnvKeyPort        = "PB_PORT"
 	EnvKeyIPAddress   = "PB_IP_ADDRESS"
+	EnvKeySiteName    = "PB_SITE_NAME"
 )
 
 // PBConfigType holds the configuration values loaded from environment variables.
@@ -33,6 +34,12 @@ func loadPBConfig() *PBConfigType {
 		AWSEndpoint: os.Getenv("AWS_ENDPOINT"),
 		Port:        os.Getenv("PB_PORT"),
 		IPAddress:   os.Getenv("PB_IP_ADDRESS"),
+		SiteName:    os.Getenv("PB_SITE_NAME"),
+	}
+
+	// デフォルトのサイト名を設定
+	if pbConfig.SiteName == "" {
+		pbConfig.SiteName = "polybuckets"
 	}
 
 	if os.Getenv("PB_CACHE_DURATION") != "" {
@@ -42,12 +49,6 @@ func loadPBConfig() *PBConfigType {
 		}
 	} else {
 		pbConfig.CacheDuration = 60 * time.Minute
-	}
-
-	if os.Getenv("PB_SITE_NAME") != "" {
-		pbConfig.SiteName = os.Getenv("PB_SITE_NAME")
-	} else {
-		pbConfig.SiteName = "polybuckets"
 	}
 
 	// Set UTC as the default timezone

@@ -109,7 +109,10 @@ func (c *Client) ClearListObjectsCache(ctx context.Context, bucket, prefix strin
 // GetListObjectsCacheEntry retrieves the listObjects cache entry for the specified bucket and prefix.
 func (c *Client) GetListObjectsCacheEntry(ctx context.Context, bucket, prefix string) *ListObjectsCacheEntry {
 	cacheKey := fmt.Sprintf("%s/%s", bucket, prefix)
-	entry, _ := c.listObjectsCacheEntry[cacheKey]
+	entry, found := c.listObjectsCacheEntry[cacheKey]
+	if !found {
+		return nil
+	}
 	return &entry
 }
 
