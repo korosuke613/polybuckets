@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
   <title>{{.SiteName}}</title>
@@ -8,10 +8,16 @@
 {{template "style" .}}
 
 <body>
-  <h1>S3 Buckets</h1>
+  <h1>{{.SiteName}}</h1>
+  <h2>S3 Buckets</h2>
+  <style>
+    .icon {
+      margin-right: 12px;
+    }
+  </style>
   <ul>
     {{range .Buckets}}
-    <li>🪣 <a href="/{{.Name}}/">{{.Name}}</a> ({{.CreationDate.Format "2006-01-02"}})</li>
+    <li><span class="icon">🪣</span><a href="/{{.Name}}/">{{.Name}}</a> ({{.CreationDate.Format "2006-01-02"}})</li>
     {{end}}
   </ul>
 

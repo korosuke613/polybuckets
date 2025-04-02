@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-  <title>polybuckets</title>
+  <title>Error - {{.SiteName}}</title>
 </head>
 
 {{template "style" .}}
 
 <body>
-  <h1>Error</h1>
+  <h1>{{.SiteName}}</h1>
+  <h2>Error</h2>
   <pre>{{.Error}}</pre>
   {{if .Path}}<p>Path: {{.Path}}</p>{{end}}
   {{if .Bucket}}<p>Bucket: {{.Bucket}}</p>{{end}}

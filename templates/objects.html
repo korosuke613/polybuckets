@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
   <title>{{.Bucket}}/{{.Prefix}} - {{.SiteName}}</title>
@@ -8,7 +8,8 @@
 {{template "style" .}}
 
 <body>
-  <h1>{{.Bucket}}/{{.Prefix}}</h1>
+  <h1>{{.SiteName}}</h1>
+  <h2>{{.Bucket}}/{{.Prefix}}</h2>
 
   <div style="height: 13px;">
     {{if .HitCache}}

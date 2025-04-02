@@ -38,23 +38,6 @@ func NewEchoServer(templates embed.FS) *echo.Echo {
 	return e
 }
 
-func createCustomTagFunc() func(c echo.Context, buf *bytes.Buffer) (int, error) {
-	return func(c echo.Context, buf *bytes.Buffer) (int, error) {
-		writeString := ""
-		hitCache := c.Get("hitCache")
-		if hitCache != nil {
-			writeString += `,"hit_cache":` + strconv.FormatBool(hitCache.(bool))
-
-			cacheExpire := c.Get("cacheExpire")
-			if hitCache == true && cacheExpire != nil {
-				writeString += `,"cache_expire":"` + cacheExpire.(string) + `"`
-				c.Set("cacheExpire", nil)
-			}
-		}
-		return buf.WriteString(writeString)
-	}
-}
-
 // SetupMiddleware sets up the middleware for the Echo instance.
 func SetupMiddleware(e *echo.Echo, templates embed.FS) {
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -63,7 +46,23 @@ func SetupMiddleware(e *echo.Echo, templates embed.FS) {
 			`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
 			`"status":${status},"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
 			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}${custom}}}` + "\n",
-		CustomTagFunc: createCustomTagFunc(),
+		CustomTagFunc: func(c echo.Context, buf *bytes.Buffer) (int, error) {
+			writeString := ""
+
+			// if ListObject cache hit, output to log
+			hitCache := c.Get("hitCache")
+			if hitCache != nil {
+				writeString += `,"hit_cache":` + strconv.FormatBool(hitCache.(bool))
+
+				cacheExpire := c.Get("cacheExpire")
+				if hitCache == true && cacheExpire != nil {
+					writeString += `,"cache_expire":"` + cacheExpire.(string) + `"`
+					c.Set("cacheExpire", nil)
+				}
+			}
+
+			return buf.WriteString(writeString)
+		},
 	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
@@ -126,17 +125,6 @@ func SetupRoutes(e *echo.Echo, ctx context.Context) {
 	})
 }
 
-// renderError は共通のエラーレンダリングロジックを提供します
-func renderError(c echo.Context, status int, err error, bucket, parentPrefix, prefix string) error {
-	return c.Render(status, "error.html", map[string]interface{}{
-		"SiteName":     env.PBConfig.SiteName,
-		"Error":        err.Error(),
-		"Bucket":       bucket,
-		"ParentPrefix": parentPrefix,
-		"Prefix":       prefix,
-	})
-}
-
 // handleRequest handles incoming HTTP requests and routes them to the appropriate S3 operations.
 func handleRequest(ctx context.Context, c echo.Context, client *s3client.Client, path string) error {
 	siteName := env.PBConfig.SiteName
@@ -151,12 +139,16 @@ func handleRequest(ctx context.Context, c echo.Context, client *s3client.Client,
 		}
 
 		buckets, err := client.ListBuckets(ctx)
-		if err != nil {
-			return renderError(c, http.StatusInternalServerError, err, "", "", "/")
-		}
 		bucketsInfo := BucketsInfo{
 			Buckets:  buckets,
 			SiteName: siteName,
+		}
+		if err != nil {
+			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
+				"SiteName": siteName,
+				"Error":    err.Error(),
+				"Path":     "/",
+			})
 		}
 		return c.Render(http.StatusOK, "buckets.html", bucketsInfo)
 
@@ -184,7 +176,13 @@ func handleRequest(ctx context.Context, c echo.Context, client *s3client.Client,
 		go client.ClearOldListObjectsCache(ctx)
 
 		if err != nil {
-			return renderError(c, http.StatusInternalServerError, err, bucket, parentPrefix, prefix)
+			return c.Render(http.StatusInternalServerError, "error.html", map[string]interface{}{
+				"SiteName":     siteName,
+				"Error":        err.Error(),
+				"Bucket":       bucket,
+				"ParentPrefix": parentPrefix,
+				"Prefix":       prefix,
+			})
 		}
 
 		return c.Render(http.StatusOK, "objects.html", map[string]interface{}{
